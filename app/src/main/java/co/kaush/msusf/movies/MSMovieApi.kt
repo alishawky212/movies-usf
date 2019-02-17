@@ -2,7 +2,7 @@ package co.kaush.msusf.movies
 
 import co.kaush.msusf.BuildConfig
 import com.google.gson.annotations.SerializedName
-import io.reactivex.Observable
+import kotlinx.coroutines.Deferred
 import retrofit2.Response
 import retrofit2.http.GET
 import retrofit2.http.Query
@@ -10,18 +10,18 @@ import retrofit2.http.Query
 interface MSMovieApi {
 
     @GET("/")
-    fun searchMovie(
+    fun searchMovieAsync(
             @Query("t") movieName: String,
             @Query("apiKey") apiKey: String = BuildConfig.OMDB_API_KEY
-    ): Observable<Response<MSMovie>>
+    ): Deferred<Response<MSMovie>>
 }
 
 data class MSMovie(
-    @SerializedName("Result") val result: Boolean,
-    @SerializedName("Error") val errorMessage: String? = null,
-    @SerializedName("Title") val title: String = "",
-    @SerializedName("Poster") val posterUrl: String = "",
-    @SerializedName("Ratings") val ratings: List<MSRating> = emptyList()
+        @SerializedName("Response") val response: Boolean = false,
+        @SerializedName("Error") val errorMessage: String? = null,
+        @SerializedName("Title") val title: String = "",
+        @SerializedName("Poster") val posterUrl: String = "",
+        @SerializedName("Ratings") val ratings: List<MSRating> = emptyList()
 ) {
     val ratingSummary: String
         get() {

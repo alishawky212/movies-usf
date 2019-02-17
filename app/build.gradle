@@ -22,7 +22,6 @@ androidExtensions {
 
 android {
     compileSdkVersion build_versions.build_sdk
-    buildToolsVersion build_versions.build_tools
 
     defaultConfig {
         applicationId "co.kaush.msusf"
@@ -55,16 +54,15 @@ dependencies {
     kapt deps.dagger.compiler
     implementation deps.glide
     implementation deps.kotlin.stdlib
+    implementation deps.kotlin.coroutines
     implementation deps.lifecycle.extensions
     implementation deps.lifecycle.runtime
     kapt deps.lifecycle.compiler
     implementation deps.okhttp.logging_interceptor
-    implementation deps.retrofit.adapter_rxjava
+    implementation deps.retrofit.adapter_coroutines
+
     implementation deps.retrofit.gson
     implementation deps.retrofit.runtime
-    implementation deps.rx.android
-    implementation deps.rx.bindings
-    implementation deps.rx.java
     implementation deps.support.app_compat
     implementation deps.support.recyclerview
     implementation deps.timber
@@ -76,6 +74,8 @@ dependencies {
     testImplementation deps.junit
     testImplementation deps.mockito.core
     testImplementation deps.mockito.kotlin
+    testImplementation deps.arch_core.testing
+    testImplementation 'org.jetbrains.kotlinx:kotlinx-coroutines-test:1.1.1'
 
     androidTestImplementation deps.atsl.runner
     androidTestImplementation deps.espresso.core

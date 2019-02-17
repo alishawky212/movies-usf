@@ -3,13 +3,13 @@ package co.kaush.msusf
 import android.content.Context
 import co.kaush.msusf.movies.MSMovieActivity
 import co.kaush.msusf.movies.MSMovieApi
+import com.jakewharton.retrofit2.adapter.kotlin.coroutines.CoroutineCallAdapterFactory
 import dagger.Component
 import dagger.Module
 import dagger.Provides
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
-import retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory
 import retrofit2.converter.gson.GsonConverterFactory
 import javax.inject.Singleton
 
@@ -33,7 +33,7 @@ class MSAppModule(private val app: MSApp) {
         return Retrofit.Builder()
                 .baseUrl("http://www.omdbapi.com")
                 .client(okHttpClient)
-                .addCallAdapterFactory(RxJava2CallAdapterFactory.create())
+                .addCallAdapterFactory(CoroutineCallAdapterFactory.invoke())
                 .addConverterFactory(GsonConverterFactory.create())
                 .build()
     }

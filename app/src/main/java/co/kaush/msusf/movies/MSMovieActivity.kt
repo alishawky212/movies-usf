@@ -1,5 +1,6 @@
 package co.kaush.msusf.movies
 
+import android.arch.lifecycle.Observer
 import android.arch.lifecycle.ViewModelProviders
 import android.os.Bundle
 import android.support.v4.content.ContextCompat
@@ -15,11 +16,6 @@ import co.kaush.msusf.movies.MSMovieEvent.RestoreFromHistoryEvent
 import co.kaush.msusf.movies.MSMovieEvent.ScreenLoadEvent
 import co.kaush.msusf.movies.MSMovieEvent.SearchMovieEvent
 import com.bumptech.glide.Glide
-import com.jakewharton.rxbinding2.view.RxView
-import io.reactivex.Observable
-import io.reactivex.android.schedulers.AndroidSchedulers
-import io.reactivex.disposables.CompositeDisposable
-import io.reactivex.subjects.PublishSubject
 import kotlinx.android.synthetic.main.activity_main.*
 import timber.log.Timber
 import javax.inject.Inject
@@ -31,9 +27,6 @@ class MSMovieActivity : MSActivity() {
 
     private lateinit var viewModel: MSMainVm
     private lateinit var listAdapter: MSMovieSearchHistoryAdapter
-
-    private var disposables: CompositeDisposable = CompositeDisposable()
-    private val historyItemClick: PublishSubject<MSMovie> = PublishSubject.create()
 
     private val spinner: CircularProgressDrawable by lazy {
         val circularProgressDrawable = CircularProgressDrawable(this)
@@ -51,85 +44,64 @@ class MSMovieActivity : MSActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        setupListView()
-
         viewModel = ViewModelProviders.of(
             this,
             MSMainVmFactory(app, movieRepo)
         ).get(MSMainVm::class.java)
+
+        viewModel.viewState.observe(this, Observer { render(it) })
+        viewModel.viewEffects.observe(this, Observer { takeActionOn(it) })
+
+        setupListView()
+        setupViewEvents()
     }
 
-    override fun onResume() {
-        super.onResume()
+    private fun setupViewEvents() {
+        viewModel.onEvent(ScreenLoadEvent)
 
-        val screenLoadEvents: Observable<ScreenLoadEvent> = Observable.just(ScreenLoadEvent)
-        val searchMovieEvents: Observable<SearchMovieEvent> = RxView.clicks(ms_mainScreen_searchBtn)
-            .map { SearchMovieEvent(ms_mainScreen_searchText.text.toString()) }
-        val addToHistoryEvents: Observable<AddToHistoryEvent> = RxView.clicks(ms_mainScreen_poster)
-            .map {
-                ms_mainScreen_poster.growShrink()
-                AddToHistoryEvent
+        ms_mainScreen_searchBtn.setOnClickListener {
+            viewModel.onEvent(SearchMovieEvent(ms_mainScreen_searchText.text.toString()))
+        }
+
+        ms_mainScreen_poster.setOnClickListener {
+            ms_mainScreen_poster.growShrink()
+            viewModel.onEvent(AddToHistoryEvent)
+        }
+    }
+
+    private fun render(viewState: MSMovieViewState?) {
+        if (viewState == null) return // Ignore null values
+
+        Timber.d("----- viewState $viewState")
+        viewState.searchBoxText?.let {
+            ms_mainScreen_searchText.setText(it)
+        }
+        ms_mainScreen_title.text = viewState.searchedMovieTitle
+        ms_mainScreen_rating.text = viewState.searchedMovieRating
+
+        viewState.searchedMoviePoster
+                .takeIf { it.isNotBlank() }
+                ?.let {
+                    Glide.with(ctx)
+                            .load(viewState.searchedMoviePoster)
+                            .placeholder(spinner)
+                            .into(ms_mainScreen_poster)
+                } ?: run {
+            ms_mainScreen_poster.setImageResource(0)
+        }
+
+        listAdapter.submitList(viewState.adapterList)
+    }
+
+    private fun takeActionOn(viewEffect: MSMovieViewEffect?) {
+        if (viewEffect == null) return
+
+        Timber.d("----- viewEffect $viewEffect")
+        when (viewEffect) {
+            is MSMovieViewEffect.AddedToHistoryToastEffect -> {
+                Toast.makeText(this, "added to history", Toast.LENGTH_SHORT).show()
             }
-        val restoreFromHistoryEvents: Observable<RestoreFromHistoryEvent> = historyItemClick
-            .map { RestoreFromHistoryEvent(it) }
-
-        disposables.add(
-            viewModel.processInputs(
-                screenLoadEvents,
-                searchMovieEvents,
-                addToHistoryEvents,
-                restoreFromHistoryEvents
-            )
-        )
-
-        disposables.add(
-            viewModel
-                .viewState()
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(
-                    { vs ->
-
-                        vs.searchBoxText?.let {
-                            ms_mainScreen_searchText.setText(it)
-                        }
-                        ms_mainScreen_title.text = vs.searchedMovieTitle
-                        ms_mainScreen_rating.text = vs.searchedMovieRating
-
-                        vs.searchedMoviePoster
-                            .takeIf { it.isNotBlank() }
-                            ?.let {
-                                Glide.with(ctx)
-                                    .load(vs.searchedMoviePoster)
-                                    .placeholder(spinner)
-                                    .into(ms_mainScreen_poster)
-                            } ?: run {
-                            ms_mainScreen_poster.setImageResource(0)
-                        }
-
-                        listAdapter.submitList(vs.adapterList)
-                    },
-                    { Timber.w(it, "something went terribly wrong") }
-                )
-        )
-
-        disposables.add(
-            viewModel
-                .viewEffects()
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe {
-                    when (it) {
-                        is MSMovieViewEffect.AddedToHistoryToastEffect -> {
-                            Toast.makeText(this, "added to history", Toast.LENGTH_SHORT).show()
-                        }
-                    }
-                }
-        )
-    }
-
-    override fun onPause() {
-        super.onPause()
-
-        disposables.clear()
+        }
     }
 
     private fun setupListView() {
@@ -142,7 +114,7 @@ class MSMovieActivity : MSActivity() {
         )
         ms_mainScreen_searchHistory.addItemDecoration(dividerItemDecoration)
 
-        listAdapter = MSMovieSearchHistoryAdapter { historyItemClick.onNext(it) }
+        listAdapter = MSMovieSearchHistoryAdapter { viewModel.onEvent(RestoreFromHistoryEvent(it)) }
         ms_mainScreen_searchHistory.adapter = listAdapter
     }
 }
