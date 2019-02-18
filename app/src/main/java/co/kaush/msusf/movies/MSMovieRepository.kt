@@ -18,7 +18,7 @@ class MSMovieRepository @Inject constructor(
 
         withContext(Dispatchers.IO) {
             try {
-                val response = movieApi.searchMovieAsync(movieName).await()
+                val response = movieApi.searchMovieAsync(movieName)
                 response.body()?.let { msMovie = it }
 
                 response.errorBody()?.let { body ->

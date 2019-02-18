@@ -2,7 +2,6 @@ package co.kaush.msusf.movies
 
 import co.kaush.msusf.BuildConfig
 import com.google.gson.annotations.SerializedName
-import kotlinx.coroutines.Deferred
 import retrofit2.Response
 import retrofit2.http.GET
 import retrofit2.http.Query
@@ -10,10 +9,10 @@ import retrofit2.http.Query
 interface MSMovieApi {
 
     @GET("/")
-    fun searchMovieAsync(
+    suspend fun searchMovieAsync(
             @Query("t") movieName: String,
             @Query("apiKey") apiKey: String = BuildConfig.OMDB_API_KEY
-    ): Deferred<Response<MSMovie>>
+    ): Response<MSMovie>
 }
 
 data class MSMovie(
