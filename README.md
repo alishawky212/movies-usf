@@ -1,3 +1,11 @@
+This is a fork of [Kaushik Gopal](https://twitter.com/kaushikgopal)'s [movies-usf](https://github.com/kaushikgopal/movies-usf) repo. The original project uses RxJava to accomplish a unidirectional state flow pattern.
+
+This version removes any dependency on RxJava and uses coroutines + LiveData to achieve the same pattern.
+The changes made to refactor the project are detailed in this blog post - 
+[Unidirectional State Flow / MVI in Android without RxJava](https://medium.com/@ratulsarna/android-unidirectional-state-flow-without-rx-596f2f7637bb)
+
+The original README follows -
+
 # Movie search using a unidirectional state flow pattern
 
 This is an attempt at coming up with a unidirectional state flow pattern that uses the concepts
